@@ -1,0 +1,10 @@
+Telethon
+pydantic
+pandas
+vaderSentiment
+
+[dev]
+pytest
+flake8
+black
+mypy

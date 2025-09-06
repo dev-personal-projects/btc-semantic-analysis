@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "btc-sentiment"
+version = "0.1.0"
+description = "Sentiment analysis for BTC using Telegram and Twitter data"
+authors = [{ name = "Your Name" }]
+dependencies = [
+    "Telethon",
+    "pydantic",
+    "pandas",
+    "vaderSentiment",
+    # add other runtime dependencies here
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "flake8",
+    "black",
+    "mypy",
+]

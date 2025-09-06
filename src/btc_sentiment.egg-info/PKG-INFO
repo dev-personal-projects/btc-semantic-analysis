@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: btc-sentiment
+Version: 0.1.0
+Summary: Sentiment analysis for BTC using Telegram and Twitter data
+Author: Your Name
+Requires-Dist: Telethon
+Requires-Dist: pydantic
+Requires-Dist: pandas
+Requires-Dist: vaderSentiment
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: flake8; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: mypy; extra == "dev"

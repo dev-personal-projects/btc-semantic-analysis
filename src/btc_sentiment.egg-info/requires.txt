@@ -1,10 +1,19 @@
-Telethon
-pydantic
-pandas
-vaderSentiment
+Telethon>=1.28
+tweepy>=4.14
+pydantic>=2.0
+pydantic-settings>=2.0
+pandas>=2.0
+vaderSentiment>=3.3
+matplotlib>=3.7
+click>=8.0
 
 [dev]
-pytest
-flake8
-black
-mypy
+pytest>=7.0
+flake8>=6.0
+black>=23.0
+mypy>=1.0
+click>=8.0
+
+[docs]
+mkdocs>=1.5
+mkdocs-material

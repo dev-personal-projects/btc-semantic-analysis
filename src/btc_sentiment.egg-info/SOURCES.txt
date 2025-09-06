@@ -1,9 +1,11 @@
 README.md
 pyproject.toml
 src/btc_sentiment/__init__.py
+src/btc_sentiment/cli.py
 src/btc_sentiment.egg-info/PKG-INFO
 src/btc_sentiment.egg-info/SOURCES.txt
 src/btc_sentiment.egg-info/dependency_links.txt
+src/btc_sentiment.egg-info/entry_points.txt
 src/btc_sentiment.egg-info/requires.txt
 src/btc_sentiment.egg-info/top_level.txt
 src/btc_sentiment/adapters/__init__.py
@@ -11,3 +13,8 @@ src/btc_sentiment/adapters/telegram_adapter.py
 src/btc_sentiment/adapters/x_api_adapter.py
 src/btc_sentiment/config/config.py
 src/btc_sentiment/models/telegram_message_model.py
+src/btc_sentiment/pipelines/ingest_pipeline.py
+src/btc_sentiment/services/aggregator.py
+src/btc_sentiment/services/sentiment_service.py
+src/btc_sentiment/utils/io.py
+src/btc_sentiment/utils/viz.py

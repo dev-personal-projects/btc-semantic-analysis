@@ -11,10 +11,11 @@ class Settings(BaseSettings):
     TG_API_HASH: str = Field(..., env="TG_API_HASH")
 
     TELEGRAM_CHANNELS: List[str] = [
-        "bitcoin_industry", "CryptoWorldNews", "cointelegraph"
+        "Market Mercenaries"
+        # "bitcoin_industry", "CryptoWorldNews", "cointelegraph", 
+        # "btcnewsalerts", "cryptobobby", "CryptoHayes",
+        # "CryptoCred", "TheMoonCarl", "WillyWoo", "glassnode"
     ]
-    AGG_WINDOW_MINUTES: int = 60
-    THRESHOLDS: Tuple[int, int] = (45, 55)
 
     model_config = SettingsConfigDict(
         env_file=".env",

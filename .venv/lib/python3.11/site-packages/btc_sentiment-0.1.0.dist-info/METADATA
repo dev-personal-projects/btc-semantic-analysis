@@ -2,13 +2,50 @@ Metadata-Version: 2.4
 Name: btc-sentiment
 Version: 0.1.0
 Summary: Sentiment analysis for BTC using Telegram and Twitter data
-Author: Your Name
-Requires-Dist: Telethon
-Requires-Dist: pydantic
-Requires-Dist: pandas
-Requires-Dist: vaderSentiment
+Author-email: Your Name <you@example.com>
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: Topic :: Internet :: WWW/HTTP :: Dynamic Content
+Classifier: License :: OSI Approved :: MIT License
+Requires-Python: <4,>=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: Telethon>=1.28
+Requires-Dist: tweepy>=4.14
+Requires-Dist: pydantic>=2.0
+Requires-Dist: pydantic-settings>=2.0
+Requires-Dist: pandas>=2.0
+Requires-Dist: vaderSentiment>=3.3
+Requires-Dist: matplotlib>=3.7
+Requires-Dist: click>=8.0
 Provides-Extra: dev
-Requires-Dist: pytest; extra == "dev"
-Requires-Dist: flake8; extra == "dev"
-Requires-Dist: black; extra == "dev"
-Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: flake8>=6.0; extra == "dev"
+Requires-Dist: black>=23.0; extra == "dev"
+Requires-Dist: mypy>=1.0; extra == "dev"
+Requires-Dist: click>=8.0; extra == "dev"
+Provides-Extra: docs
+Requires-Dist: mkdocs>=1.5; extra == "docs"
+Requires-Dist: mkdocs-material; extra == "docs"
+
+# BTC Sentiment Analysis
+
+Weekend crash project for Bitcoin sentiment analysis.
+
+## Quick Start
+
+1. Open in Dev Container
+2. Run first notebook: `notebooks/01_sentiment_analysis.ipynb`
+
+## Structure
+- `notebooks/` - Jupyter notebooks for analysis
+- `src/btc_sentiment/` - Core Python package
+- `data/` - Data storage
+
+
+# Create the essential files
+touch scripts/setup-dev.sh
+chmod +x scripts/setup-dev.sh
+touch src/btc_sentiment/__init__.py
+touch README.md
+touch .gitignore

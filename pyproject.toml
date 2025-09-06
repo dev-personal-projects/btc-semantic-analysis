@@ -1,24 +1,57 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "btc-sentiment"
 version = "0.1.0"
 description = "Sentiment analysis for BTC using Telegram and Twitter data"
-authors = [{ name = "Your Name" }]
+readme = "README.md"
+requires-python = ">=3.11,<4"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "License :: OSI Approved :: MIT License"
+]
+
 dependencies = [
-    "Telethon",
-    "pydantic",
-    "pandas",
-    "vaderSentiment",
-    # add other runtime dependencies here
+    "Telethon>=1.28",
+    "tweepy>=4.14",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pandas>=2.0",
+    "vaderSentiment>=3.3",
+    "matplotlib>=3.7",
+    "click>=8.0"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "flake8",
-    "black",
-    "mypy",
+    "pytest>=7.0",
+    "flake8>=6.0",
+    "black>=23.0",
+    "mypy>=1.0",
+    "click>=8.0"
 ]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material"
+]
+
+[project.scripts]
+run-pipeline = "btc_sentiment.cli:main"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+
+[tool.mypy]
+python_version = 3.11
+strict = true

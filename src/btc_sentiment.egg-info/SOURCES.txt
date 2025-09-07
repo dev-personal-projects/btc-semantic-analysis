@@ -11,10 +11,14 @@ src/btc_sentiment.egg-info/top_level.txt
 src/btc_sentiment/adapters/__init__.py
 src/btc_sentiment/adapters/telegram_adapter.py
 src/btc_sentiment/adapters/x_api_adapter.py
+src/btc_sentiment/analysis/__init__.py
+src/btc_sentiment/analysis/telegram_analyzer.py
 src/btc_sentiment/config/config.py
+src/btc_sentiment/models/__init__.py
 src/btc_sentiment/models/telegram_message_model.py
 src/btc_sentiment/pipelines/ingest_pipeline.py
 src/btc_sentiment/services/aggregator.py
 src/btc_sentiment/services/sentiment_service.py
+src/btc_sentiment/utils/analysis.py
 src/btc_sentiment/utils/io.py
-src/btc_sentiment/utils/viz.py
+src/btc_sentiment/utils/visualizations.py

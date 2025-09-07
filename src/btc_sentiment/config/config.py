@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -11,10 +11,13 @@ class Settings(BaseSettings):
     TG_API_HASH: str = Field(..., env="TG_API_HASH")
 
     TELEGRAM_CHANNELS: List[str] = [
-        "Market Mercenaries"
-        # "bitcoin_industry", "CryptoWorldNews", "cointelegraph", 
-        # "btcnewsalerts", "cryptobobby", "CryptoHayes",
-        # "CryptoCred", "TheMoonCarl", "WillyWoo", "glassnode"
+        # "bitcoin",
+        # "CryptoWorldNews"
+    ]
+    
+    TELEGRAM_GROUPS: List[Union[str, int]] = [
+        -1001305631383  # Use integer format
+        # "-1001305631383"  # String format didn't work
     ]
 
     model_config = SettingsConfigDict(

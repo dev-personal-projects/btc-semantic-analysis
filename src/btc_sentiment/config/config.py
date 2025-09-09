@@ -16,8 +16,9 @@ class Settings(BaseSettings):
     ]
     
     TELEGRAM_GROUPS: List[Union[str, int]] = [
-        -1001305631383  # Use integer format
+        # -1001305631383  # Use integer format
         # "-1001305631383"  # String format didn't work
+        "Insider_leak_of_theday"
     ]
 
     model_config = SettingsConfigDict(

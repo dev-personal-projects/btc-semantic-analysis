@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import List, Optional, Dict, Union
 
 from ..config.config import get_settings
 from ..adapters.x_api_adapter import XApiAdapter
@@ -35,14 +35,31 @@ def _calc_window(days_back: int, include_today: bool = True) -> tuple[datetime, 
     return start, end
 
 
+def _warn_incompleteness(start_date: datetime, channel: str, fetched_dates: List[datetime], limit_hit: bool):
+    """Emit predictable/observable warnings about data sufficiency."""
+    if not fetched_dates:
+        print(f"⚠️  Data incomplete for {channel}: no messages returned.")
+        return
+
+    earliest = min(fetched_dates)
+    if earliest > start_date:
+        print(
+            f"⚠️  Data incomplete for {channel}: messages prior to {earliest.date()} "
+            f"could not be retrieved (requested start {start_date.date()})."
+        )
+    if limit_hit:
+        print(f"⚠️  Data may be clipped for {channel}: exactly hit the configured limit; older messages may exist.")
+
+
 # -------- pipelines --------
 
 def run_ingest_pipeline(
     days_back: int = 1,
     tweets_per_day: int = 50,
-    messages_limit: int = 200,
+    messages_limit: Optional[int] = None,   # total per channel (None = fetch all)
     output_path: str = "data/processed/daily_sentiment.parquet",
     include_today: bool = True,
+    page_size: int = 200,
 ) -> List[DailySentiment]:
     """
     End-to-end pipeline: X + Telegram → sentiment → daily aggregate (with full day coverage).
@@ -62,26 +79,38 @@ def run_ingest_pipeline(
     # --- Telegram (concurrent per channel/group) ---
     tg_adapter = TelegramAdapter()
     coros = []
+    channels: Dict[str, Union[str, int]] = {}
+
     for ch in settings.TELEGRAM_CHANNELS or []:
-        coros.append(
-            tg_adapter.fetch_messages_for_channel(
-                channel=ch, limit=messages_limit, since=start_date, until=end_date
-            )
-        )
+        channels[str(ch)] = ch
     for g in settings.TELEGRAM_GROUPS or []:
+        channels[str(g)] = g
+
+    for name, target in channels.items():
         coros.append(
             tg_adapter.fetch_messages_for_channel(
-                channel=g, limit=messages_limit, since=start_date, until=end_date
+                channel=target,
+                limit=messages_limit,
+                since=start_date,
+                until=end_date,
+                page_size=page_size,
             )
         )
 
     messages = []
+    per_channel_batches: Dict[str, List] = {}
     if coros:
-        for chunk in _run_in_current_loop(coros):
+        for name, chunk in zip(channels.keys(), _run_in_current_loop(coros)):
+            per_channel_batches[name] = chunk
             messages.extend(chunk)
 
-    # --- Sentiment annotation ---
-    svc = SentimentService(low_thresh=45, high_thresh=55)
+    # --- Data sufficiency feedback (CUPID Predictable/Observable)
+    for name, batch in per_channel_batches.items():
+        limit_hit = (messages_limit is not None) and (len(batch) == messages_limit)
+        _warn_incompleteness(start_date, name, [m.date for m in batch], limit_hit)
+
+    # --- Sentiment annotation (neutral only at 50)
+    svc = SentimentService(low_thresh=50, high_thresh=50)
     tweet_records = [{"date": t.created_at, "source": "twitter", "text": t.text} for t in tweets]
     msg_records = [{"date": m.date, "source": "telegram", "text": m.text} for m in messages]
 
@@ -132,6 +161,7 @@ def run_simple_analysis(
     days_back: int = 1,
     output_path: str = "data/processed/daily_sentiment.parquet",
     include_today: bool = True,
+    page_size: int = 200,
 ) -> List[DailySentiment]:
     """
     Telegram-only simple analysis over a continuous window.
@@ -142,17 +172,21 @@ def run_simple_analysis(
 
     tg_adapter = TelegramAdapter()
     coros = []
+    targets = []
     for g in settings.TELEGRAM_GROUPS or []:
-        coros.append(tg_adapter.fetch_messages_time_range(g, start_date, end_date))
+        targets.append(g)
+        coros.append(tg_adapter.fetch_messages_for_channel(g, None, start_date, end_date, page_size))
     for ch in settings.TELEGRAM_CHANNELS or []:
-        coros.append(tg_adapter.fetch_messages_time_range(ch, start_date, end_date))
+        targets.append(ch)
+        coros.append(tg_adapter.fetch_messages_for_channel(ch, None, start_date, end_date, page_size))
 
     messages = []
+    per_target: Dict[str, List] = {}
     if coros:
-        for chunk in _run_in_current_loop(coros):
+        for name, chunk in zip(map(str, targets), _run_in_current_loop(coros)):
+            per_target[name] = chunk
             messages.extend(chunk)
 
-    # If nothing fetched, still emit a full calendar (so charts show the whole window)
     if not messages:
         print("❌ No messages found for this period.")
         daily = Aggregator.aggregate(
@@ -167,8 +201,8 @@ def run_simple_analysis(
         plot_daily_sentiment(daily)
         return daily
 
-    # Sentiment + aggregate
-    svc = SentimentService(low_thresh=45, high_thresh=55)
+    # Sentiment + aggregate (neutral=50)
+    svc = SentimentService(low_thresh=50, high_thresh=50)
     records = [{"date": m.date, "source": "telegram", "text": m.text} for m in messages]
     anns = svc.annotate([r["text"] for r in records])
     for r, a in zip(records, anns):

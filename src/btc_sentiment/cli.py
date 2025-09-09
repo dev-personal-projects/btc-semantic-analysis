@@ -1,7 +1,7 @@
 import os
 import click
 from datetime import datetime
-from .pipelines.ingest_pipeline import run_ingest_pipeline
+from .pipelines.ingest_pipeline import run_simple_analysis
 from .config.config import get_settings
 
 @click.command()
@@ -9,46 +9,29 @@ from .config.config import get_settings
     "--days-back",
     default=1,
     show_default=True,
-    help="How many days back to fetch data."
-)
-@click.option(
-    "--tweets-per-day",
-    default=50,
-    show_default=True,
-    help="Maximum X/Twitter tweets to fetch per run."
-)
-@click.option(
-    "--messages-per-channel",
-    default=50,
-    show_default=True,
-    help="Max Telegram messages per channel."
+    help="How many days back to analyze."
 )
 @click.option(
     "--env",
     default=None,
     help="Environment config to use (e.g., development, production)."
 )
-def main(days_back, tweets_per_day, messages_per_channel, env):
+def main(days_back, env):
     """
-    Run the ingest pipeline to fetch data, analyze sentiment, aggregate daily scores,
-    save results, and plot trends.
+    Run simple sentiment analysis for the specified time period.
     """
     if env:
         os.environ["ENVIRONMENT"] = env
         get_settings.cache_clear()
         click.echo(f"Using configuration environment: {env}")
 
-    click.echo("Starting BTC sentiment ingest pipeline...")
+    click.echo(f"Starting sentiment analysis for {days_back} day(s)...")
     start_time = datetime.utcnow()
-    daily = run_ingest_pipeline(
-        days_back=days_back,
-        tweets_per_day=tweets_per_day,
-        messages_per_channel=messages_per_channel
-    )
+    daily = run_simple_analysis(days_back=days_back)
     end_time = datetime.utcnow()
 
-    click.echo(f"Pipeline completed in {end_time - start_time}")
-    click.echo(f"Processed {len(daily)} daily sentiment records.")
+    click.echo(f"Analysis completed in {end_time - start_time}")
+    click.echo(f"Generated {len(daily)} daily sentiment records.")
 
 if __name__ == "__main__":
     main()

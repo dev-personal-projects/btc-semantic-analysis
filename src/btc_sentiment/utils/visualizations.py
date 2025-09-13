@@ -51,16 +51,20 @@ def create_sentiment_dashboard(records: List[DailySentiment]):
         return
 
     df = pd.DataFrame([r.dict() for r in records])
-    df['date'] = pd.to_datetime(df['date'])
+    # dtype safety
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).copy()
+    df["count"] = pd.to_numeric(df["count"], errors="coerce").fillna(0).astype(int)
+    df["avg_score"] = pd.to_numeric(df["avg_score"], errors="coerce")
 
     fig, axes = plt.subplots(2, 3, figsize=(18, 12))
     fig.suptitle('Bitcoin Sentiment Analysis Dashboard', fontsize=16, fontweight='bold')
 
-    # 1. Daily sentiment trend
+    # 1) Daily sentiment trend (don’t draw through no-data)
     for source in df['source'].unique():
-        source_data = df[df['source'] == source].sort_values('date')
-        y = source_data["avg_score"].where(~((source_data["count"] == 0) | (source_data["label"] == "no_data")), np.nan)
-        axes[0, 0].plot(source_data['date'], y, marker='o', linewidth=2, label=source, alpha=0.85)
+        sd = df[df['source'] == source].sort_values('date')
+        y = sd["avg_score"].where(~((sd["count"] == 0) | (sd["label"] == "no_data")), np.nan)
+        axes[0, 0].plot(sd['date'], y, marker='o', linewidth=2, label=source, alpha=0.85)
     axes[0, 0].axhline(50, linestyle="--", linewidth=1, alpha=0.6, color="gray")
     axes[0, 0].set_title('Daily Sentiment Trend')
     axes[0, 0].set_xlabel('Date')
@@ -68,22 +72,23 @@ def create_sentiment_dashboard(records: List[DailySentiment]):
     axes[0, 0].legend()
     axes[0, 0].grid(True, alpha=0.3)
 
-    # 2. Sentiment distribution by source
+    # 2) Sentiment distribution by source (FIXED operator precedence)
     sentiment_data, labels = [], []
     for source in df['source'].unique():
-        sentiment_data.append(df[df['source'] == source & (df['count'] > 0)]['avg_score'])
+        mask = (df['source'] == source) & (df['count'] > 0)
+        sentiment_data.append(df.loc[mask, 'avg_score'])
         labels.append(source)
     axes[0, 1].boxplot(sentiment_data, labels=labels)
     axes[0, 1].set_title('Sentiment Score Distribution by Source')
     axes[0, 1].set_ylabel('Sentiment Score')
 
-    # 3. Message volume by source
+    # 3) Message volume by source
     source_counts = df.groupby('source')['count'].sum()
     colors = plt.cm.Set3(np.linspace(0, 1, len(source_counts)))
     axes[0, 2].pie(source_counts.values, labels=source_counts.index, autopct='%1.1f%%', colors=colors)
     axes[0, 2].set_title('Message Volume by Source')
 
-    # 4. Sentiment label distribution
+    # 4) Overall sentiment label distribution
     label_counts = df['label'].value_counts()
     color_map = {'positive': '#2ecc71', 'neutral': '#95a5a6', 'negative': '#e74c3c', 'no_data': '#bdc3c7'}
     bar_colors = [color_map.get(label, '#3498db') for label in label_counts.index]
@@ -91,14 +96,14 @@ def create_sentiment_dashboard(records: List[DailySentiment]):
     axes[1, 0].set_title('Overall Sentiment Distribution')
     axes[1, 0].set_ylabel('Number of Days')
     for bar in bars:
-        height = bar.get_height()
-        axes[1, 0].text(bar.get_x() + bar.get_width()/2., height, f'{int(height)}', ha='center', va='bottom')
+        h = bar.get_height()
+        axes[1, 0].text(bar.get_x() + bar.get_width()/2., h, f'{int(h)}', ha='center', va='bottom')
 
-    # 5. Rolling average sentiment
+    # 5) Rolling average (skip no-data days)
     window = min(7, max(1, len(df) // 3))
     for source in df['source'].unique():
-        source_data = df[df['source'] == source].sort_values('date')
-        real = source_data[source_data['count'] > 0]
+        sd = df[df['source'] == source].sort_values('date')
+        real = sd[sd['count'] > 0]
         if len(real) >= window:
             rolling_avg = real['avg_score'].rolling(window=window, center=True).mean()
             axes[1, 1].plot(real['date'], rolling_avg, linewidth=3, label=f'{source} ({window}-day avg)', alpha=0.85)
@@ -108,7 +113,7 @@ def create_sentiment_dashboard(records: List[DailySentiment]):
     axes[1, 1].legend()
     axes[1, 1].grid(True, alpha=0.3)
 
-    # 6. If 1 source → show daily message counts; else correlation
+    # 6) If multiple sources: correlation; else daily message volume
     if len(df['source'].unique()) > 1:
         pivot_df = df.pivot(index='date', columns='source', values='avg_score')
         im = axes[1, 2].imshow(pivot_df.corr(), cmap='coolwarm', aspect='auto', vmin=-1, vmax=1)
@@ -126,5 +131,51 @@ def create_sentiment_dashboard(records: List[DailySentiment]):
         axes[1, 2].set_ylabel('Message Count')
         axes[1, 2].tick_params(axis='x', rotation=45)
 
+    plt.tight_layout()
+    plt.show()
+
+def plot_sentiment_with_price(df: pd.DataFrame):
+    """
+    Overlay BTC price on top of daily sentiment (per source).
+    Expects columns: date, avg_score, source, btc_close
+    """
+    if df.empty:
+        print("No data for price overlay")
+        return
+
+    d = df.copy().sort_values("date")
+    if not np.issubdtype(d["date"].dtype, np.datetime64):
+        d["date"] = pd.to_datetime(d["date"], errors="coerce")
+    d = d.dropna(subset=["date"])
+
+    fig, ax1 = plt.subplots(figsize=(14, 7))
+    # sentiment lines
+    sources = d["source"].unique().tolist() if "source" in d.columns else ["telegram"]
+    for s in sources:
+        dd = d if s == "telegram" and "source" not in d.columns else d[d["source"] == s]
+        ax1.plot(dd["date"], dd["avg_score"], alpha=0.35, linewidth=1.5, label=f"{s} daily")
+        # 7d smoothing
+        dd = dd.sort_values("date")
+        if len(dd) >= 3:
+            ax1.plot(dd["date"], dd["avg_score"].rolling(7, min_periods=3).mean(),
+                     linewidth=3, label=f"{s} 7d avg")
+
+    ax1.axhline(50, ls="--", c="gray", alpha=0.6)
+    ax1.set_ylabel("Sentiment (0–100)")
+    ax1.set_xlabel("Date")
+
+    # price on twin axis
+    ax2 = ax1.twinx()
+    if d["btc_close"].notna().any():
+        ax2.plot(d["date"], d["btc_close"], color="black", linewidth=2.0, label="BTC close (USDT)")
+        ax2.set_ylabel("BTC Price (USDT)")
+
+    # legends
+    h1, l1 = ax1.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax1.legend(h1 + h2, l1 + l2, loc="upper left", ncol=2, fontsize=9)
+
+    ax1.set_title("Sentiment vs BTC Price (Binance spot, daily close)", fontsize=14, fontweight="bold")
+    ax1.grid(True, alpha=0.25)
     plt.tight_layout()
     plt.show()

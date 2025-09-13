@@ -32,3 +32,13 @@ def load_daily_sentiment(path: Optional[str] = None) -> List[DailySentiment]:
     except Exception as e:
         print(f"Error loading data from {path}: {e}")
         return []
+    
+def save_dataframe(df: pd.DataFrame, path: str) -> str:
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamped = p.parent / f"{p.stem}_{ts}{p.suffix}"
+    df.to_parquet(stamped, index=False)
+    df.to_parquet(p, index=False)
+    print(f"Saved DataFrame: {len(df)} rows → {stamped}")
+    return str(stamped)

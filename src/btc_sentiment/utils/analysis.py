@@ -1,6 +1,5 @@
 import pandas as pd
 from typing import List, Dict
-from ..services.aggregator import DailySentiment
 
 def load_and_prepare_data(path: str = None) -> pd.DataFrame:
     """Load sentiment data and prepare it for analysis"""
